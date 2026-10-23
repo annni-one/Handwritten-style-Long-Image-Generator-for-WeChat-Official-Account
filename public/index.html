@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annie的公众号长图排版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --paper: #eef6fc;
+    --paper-2: #e4f0f8;
+    --ink: #3b4b57;
+    --ink-soft: #75899b;
+    --accent: #8fb8d6;
+    --accent-deep: #5488ac;
+    --line: #d2e5f2;
+    --card: #fbfdff;
+    --blue: #d1dde2;
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 520px at 85% -5%, rgba(174,213,238,.75), rgba(174,213,238,0) 62%),
+      radial-gradient(900px 520px at -10% 100%, rgba(199,226,243,.7), rgba(199,226,243,0) 62%),
+      linear-gradient(165deg, #f3fafd 0%, #e5f2fa 48%, #d3e8f6 100%),
+      var(--paper);
+    min-height: 100vh;
+  }
+  /* 纸纹颗粒 */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .3; z-index: 0;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='220' height='220' filter='url(%23n)' opacity='0.5'/></svg>");
+  }
+
+  header {
+    position: relative; z-index: 1;
+    padding: 34px 44px 22px;
+    display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  }
+  header h1 {
+    font-family: "KaiTi", "STKaiti", serif;
+    font-size: 34px; letter-spacing: 6px;
+  }
+  header h1 em { font-style: normal; color: var(--accent-deep); }
+  header .sub { color: var(--ink-soft); font-size: 13px; letter-spacing: 3px; }
+  .tape-hd {
+    width: 118px; height: 26px; align-self: center; transform: rotate(-3deg);
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,.65) 0 6px, rgba(255,255,255,.32) 6px 12px),
+                rgba(150,190,216,.55);
+    box-shadow: 0 3px 8px rgba(70,100,125,.16);
+  }
+
+  .layout {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 430px 1fr; gap: 26px;
+    padding: 6px 44px 60px; align-items: start;
+  }
+  @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 12px 30px rgba(88,120,145,.12), 0 2px 6px rgba(88,120,145,.08);
+    padding: 24px 24px 26px;
+    position: relative;
+  }
+  .card + .card { margin-top: 22px; }
+  .card::after {
+    content: ""; position: absolute; inset: 0; border-radius: 6px; pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.85), inset 0 0 30px rgba(196,220,237,.3);
+  }
+  .card .tape {
+    position: absolute; top: -12px; left: 26px; width: 96px; height: 24px; transform: rotate(-4deg);
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,.7) 0 6px, rgba(255,255,255,.35) 6px 12px),
+                rgba(172,205,226,.6);
+    box-shadow: 0 3px 7px rgba(70,100,125,.15);
+  }
+
+  h2 {
+    font-family: "KaiTi", "STKaiti", serif;
+    font-size: 21px; letter-spacing: 4px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .no {
+    font-family: "Segoe UI", Arial, sans-serif; font-weight: 800; font-size: 19px;
+    color: var(--accent-deep);
+  }
+  h2 .slash { color: var(--accent); font-weight: 800; transform: skewX(-12deg); display: inline-block; }
+  .hint { font-size: 12px; color: var(--ink-soft); letter-spacing: 1px; margin-bottom: 14px; line-height: 1.7; }
+
+  /* —— 上传 —— */
+  .drop {
+    border: 2px dashed #b7d3e7; border-radius: 6px;
+    background: var(--paper-2);
+    min-height: 168px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer; transition: .18s; overflow: hidden; position: relative;
+    text-align: center; padding: 10px;
+  }
+  .drop:hover, .drop.drag { border-color: var(--accent-deep); background: #ecf6fc; }
+  .drop .icon { font-size: 30px; opacity: .7; }
+  .drop p { font-size: 13px; color: var(--ink-soft); letter-spacing: 2px; }
+  .drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .drop .rechange {
+    position: absolute; right: 8px; bottom: 8px; z-index: 2;
+    background: rgba(56,78,95,.85); color: #fff; font-size: 12px;
+    padding: 5px 12px; border-radius: 3px; letter-spacing: 2px;
+  }
+  #file { display: none; }
+
+  /* —— 表单 —— */
+  label.f { display: block; font-size: 13px; letter-spacing: 3px; color: var(--ink-soft); margin: 16px 0 7px; }
+  textarea, input[type=text] {
+    width: 100%; border: 1px solid var(--line); background: #fdfeff;
+    border-radius: 4px; padding: 11px 13px; font-size: 14px; color: var(--ink);
+    font-family: inherit; line-height: 1.8; outline: none; transition: .15s;
+    resize: vertical;
+  }
+  textarea:focus, input[type=text]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,174,208,.2); }
+  textarea { min-height: 170px; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+
+  .radios { display: flex; gap: 10px; }
+  .radios label {
+    flex: 1; border: 1.5px solid var(--line); border-radius: 5px; padding: 11px 8px;
+    text-align: center; cursor: pointer; font-size: 13px; letter-spacing: 2px;
+    background: #fdfeff; transition: .15s; color: var(--ink-soft);
+  }
+  .radios input { display: none; }
+  .radios label.on { border-color: var(--accent-deep); background: #e4f1fa; color: var(--ink); font-weight: bold; }
+  .radios label small { display: block; font-size: 11px; letter-spacing: 1px; opacity: .75; margin-top: 3px; font-weight: normal; }
+
+  /* —— 按钮 —— */
+  .btn {
+    display: block; width: 100%; border: none; cursor: pointer;
+    font-family: "KaiTi", "STKaiti", serif; font-size: 18px; letter-spacing: 5px;
+    padding: 14px 0; border-radius: 5px; transition: .15s; margin-top: 18px;
+  }
+  .btn.primary {
+    background: linear-gradient(180deg, #6da4c9, #4f82a6); color: #fff;
+    box-shadow: 0 8px 18px rgba(79,130,166,.32);
+  }
+  .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 11px 22px rgba(79,130,166,.38); }
+  .btn.ghost {
+    background: #fdfeff; border: 1.5px solid var(--accent); color: var(--accent-deep);
+  }
+  .btn.ghost:hover { background: #edf6fc; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+  /* —— 分节编辑 —— */
+  #sections { display: none; }
+  .sec-item {
+    border: 1px solid var(--line); border-radius: 5px; background: #fdfeff;
+    padding: 14px; margin-bottom: 14px; position: relative;
+  }
+  .sec-item .idx {
+    position: absolute; top: -10px; left: 12px; background: var(--accent-deep); color: #fff;
+    font-family: "Segoe UI", sans-serif; font-weight: 800; font-size: 12px;
+    padding: 3px 9px; border-radius: 3px; letter-spacing: 1px;
+  }
+  .sec-item .del {
+    position: absolute; top: -10px; right: 12px; border: none; cursor: pointer;
+    background: #e6f1f9; color: var(--ink-soft); font-size: 12px;
+    padding: 3px 10px; border-radius: 3px;
+  }
+  .sec-item .del:hover { background: #d6e8f5; color: #9a5b52; }
+  .sec-item input { margin-top: 6px; font-weight: bold; }
+  .sec-item textarea { min-height: 96px; margin-top: 8px; font-size: 13.5px; }
+  .add-sec {
+    width: 100%; border: 1.5px dashed #b7d3e7; background: transparent; cursor: pointer;
+    padding: 10px 0; border-radius: 5px; color: var(--ink-soft);
+    font-size: 13px; letter-spacing: 3px;
+  }
+  .add-sec:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+  /* —— 结果区 —— */
+  #result { display: none; }
+  .result-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .result-bar .meta { font-size: 13px; color: var(--ink-soft); letter-spacing: 1px; }
+  .dl {
+    background: linear-gradient(180deg, #6da4c9, #4f82a6); color: #fff; text-decoration: none;
+    font-size: 14px; letter-spacing: 3px; padding: 11px 26px; border-radius: 5px;
+    box-shadow: 0 7px 16px rgba(79,130,166,.3);
+  }
+  .dl:hover { filter: brightness(1.08); }
+  .frame {
+    border: 1px solid var(--line); border-radius: 5px; overflow: hidden;
+    background: repeating-conic-gradient(#e9f2f8 0% 25%, #f8fbfd 0% 50%) 0 0/22px 22px;
+    max-height: 78vh; overflow-y: auto; text-align: center;
+  }
+  .frame img { max-width: 100%; vertical-align: top; box-shadow: 0 4px 24px rgba(66,100,125,.2); }
+
+  /* —— 状态/报错 —— */
+  #status, #status1 { display: none; margin-top: 14px; font-size: 13.5px; letter-spacing: 1px; line-height: 1.8; }
+  #status.busy, #status1.busy { color: var(--accent-deep); }
+  #status.err, #status1.err { color: #9a5b52; background: #fbeeea; border: 1px solid #efd6cd; padding: 10px 12px; border-radius: 4px; }
+  #status.ok, #status1.ok { color: #4f7f8a; }
+  .spin {
+    display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(96,140,172,.35);
+    border-top-color: var(--accent-deep); border-radius: 50%; animation: sp .8s linear infinite;
+    vertical-align: -2px; margin-right: 7px;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  footer { position: relative; z-index: 1; text-align: center; padding: 0 0 40px; color: var(--ink-soft); font-size: 12px; letter-spacing: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tape-hd"></div>
+  <h1>Annie的公众号<em>长图</em>排版</h1>
+  <div class="sub">TEXT + IMAGE → JOURNAL PNG</div>
+</header>
+
+<div class="layout">
+  <!-- ================= 左：输入 ================= -->
+  <div>
+    <div class="card">
+      <div class="tape"></div>
+      <h2><span class="no">01</span><span class="slash">/</span>上传参考图片</h2>
+      <p class="hint">这张图决定背景色调与手账贴纸主体（会自动抠图，保持原图样貌）。</p>
+      <label class="drop" id="drop" for="file">
+        <span class="icon">🖼️</span>
+        <p>点击选择 或 拖拽图片到此处</p>
+        <span class="rechange" id="rechange" style="display:none">更换图片</span>
+        <img id="thumb" style="display:none" alt="">
+      </label>
+      <input type="file" id="file" accept="image/*">
+    </div>
+
+    <div class="card">
+      <div class="tape"></div>
+      <h2><span class="no">02</span><span class="slash">/</span>粘贴整篇文案</h2>
+      <p class="hint">纯文字即可，自动分段抽取小标题；分节结果可在右侧随时编辑。支持 <b>## 小标题</b> 手动标记。</p>
+      <textarea id="text" placeholder="把一整篇纯文字粘到这里……&#10;&#10;工具会自动分段、抽小标题，生成 01 / 02 / 03 章节结构。"></textarea>
+      <label class="f">每几段合一节（可选）</label>
+      <input type="text" id="sectionSize" value="2" inputmode="numeric">
+      <button class="btn ghost" id="btnSegment">✦ 智能分节</button>
+      <div id="status1"></div>
+    </div>
+
+    <div class="card" id="options">
+      <div class="tape"></div>
+      <h2><span class="no">03</span><span class="slash">/</span>样式与封面</h2>
+
+      <label class="f">背景模式</label>
+      <div class="radios" id="modeRow">
+        <label class="on" data-v="image">图片背景<small>模糊 · 提亮 · 渐变遮罩 · 颗粒</small></label>
+        <label data-v="gradient">纯渐变<small>按主色生成 · 与图统一</small></label>
+      </div>
+
+      <div class="row">
+        <div>
+          <label class="f">封面大标题</label>
+          <input type="text" id="title" placeholder="留空取第一节标题">
+        </div>
+        <div>
+          <label class="f">顶部小标签</label>
+          <input type="text" id="subtitle" placeholder="如：JOURNAL · 手账长图">
+        </div>
+      </div>
+      <label class="f">英文花体小字（可选）</label>
+      <input type="text" id="en" placeholder="如：Botanical Journal">
+
+      <label class="f">贴纸处理</label>
+      <div class="radios" id="cutRow">
+        <label class="on" data-v="1">精细抠图<small>主体免抠贴纸 · 多约1秒</small></label>
+        <label data-v="0">快速 · 不抠图<small>相框卡+装饰 · 最快</small></label>
+      </div>
+
+      <label class="f">导出宽度</label>
+      <div class="radios" id="scaleRow">
+        <label class="on" data-v="1">900 px<small>标准 · 适合公众号</small></label>
+        <label data-v="2">1800 px<small>高清 · 细节更锐利</small></label>
+      </div>
+
+      <button class="btn primary" id="btnGenerate">✦ 生成公众号长图</button>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <!-- ================= 右：分节 & 结果 ================= -->
+  <div>
+    <div class="card" id="sections">
+      <div class="tape"></div>
+      <h2><span class="no">04</span><span class="slash">/</span>编辑分节</h2>
+      <p class="hint">标题会成为「01 / 标题」章节头，正文放入便签文字框。可增删改。</p>
+      <div id="secList"></div>
+      <button class="add-sec" id="btnAdd">＋ 添加一节</button>
+    </div>
+
+    <div class="card" id="result">
+      <div class="tape"></div>
+      <h2><span class="no">05</span><span class="slash">/</span>生成结果</h2>
+      <div class="result-bar">
+        <a class="dl" id="download" download="Annie的公众号长图.png" href="#">⬇ 下载 PNG</a>
+        <span class="meta" id="meta"></span>
+      </div>
+      <div class="frame"><img id="preview" alt="生成结果预览"></div>
+    </div>
+  </div>
+</div>
+
+<footer>— Annie · AI 手账排版 · 全程本地运行 · 图片不上传云端 —</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+
+let imageBase64 = null;   // 原图（不带 data: 前缀）
+let sections = [];        // 分节数据
+
+/* ---------- 图片上传 ---------- */
+const drop = $("#drop"), fileInput = $("#file"), thumb = $("#thumb"), rechange = $("#rechange");
+
+function loadImage(f) {
+  if (!f || !f.type.startsWith("image/")) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    imageBase64 = rd.result.split(",")[1];
+    thumb.src = rd.result;
+    thumb.style.display = "block";
+    rechange.style.display = "block";
+    drop.querySelector(".icon").style.display = "none";
+    drop.querySelector("p").style.display = "none";
+  };
+  rd.readAsDataURL(f);
+}
+fileInput.addEventListener("change", (e) => loadImage(e.target.files[0]));
+["dragover", "dragenter"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("drag"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("drag"); }));
+drop.addEventListener("drop", (e) => loadImage(e.dataTransfer.files[0]));
+
+/* ---------- 单选组 ---------- */
+function bindRadio(rowId) {
+  const row = $(rowId);
+  row.addEventListener("click", (e) => {
+    const lab = e.target.closest("label");
+    if (!lab) return;
+    row.querySelectorAll("label").forEach((l) => l.classList.remove("on"));
+    lab.classList.add("on");
+  });
+}
+bindRadio("#modeRow"); bindRadio("#scaleRow"); bindRadio("#cutRow");
+const mode = () => $("#modeRow label.on").dataset.v;
+const scale = () => Number($("#scaleRow label.on").dataset.v);
+const cutoutOn = () => $("#cutRow label.on").dataset.v === "1";
+
+/* ---------- 状态提示 ---------- */
+function setStatus(el, kind, html) {
+  const box = $(el);
+  box.className = "";
+  if (!html) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  box.className = kind;
+  box.innerHTML = html;
+}
+
+/* ---------- 分节 ---------- */
+async function doSegment() {
+  const text = $("#text").value.trim();
+  if (!text) return setStatus("#status1", "err", "请先粘贴文案");
+  setStatus("#status1", "busy", '<span class="spin"></span>正在智能分节…');
+  try {
+    const r = await fetch("/api/segment", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, sectionSize: Number($("#sectionSize").value) || 2 }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "分节失败");
+    sections = j.sections;
+    renderSections();
+    setStatus("#status1", "ok", `✓ 已分为 ${sections.length} 节，请在右侧编辑`);
+    $("#sections").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    setStatus("#status1", "err", "✗ " + e.message);
+  }
+}
+$("#btnSegment").addEventListener("click", doSegment);
+
+function renderSections() {
+  const list = $("#secList");
+  list.innerHTML = "";
+  sections.forEach((s, i) => {
+    const div = document.createElement("div");
+    div.className = "sec-item";
+    div.innerHTML = `
+      <span class="idx">${String(i + 1).padStart(2, "0")}</span>
+      <button class="del" data-i="${i}">删除</button>
+      <input type="text" class="s-title" value="${s.title.replace(/"/g, "&quot;")}" placeholder="章节小标题">
+      <textarea class="s-text" placeholder="本节正文">${s.text.replace(/</g, "&lt;")}</textarea>`;
+    div.querySelector(".s-title").addEventListener("input", (e) => { sections[i].title = e.target.value; });
+    div.querySelector(".s-text").addEventListener("input", (e) => { sections[i].text = e.target.value; });
+    div.querySelector(".del").addEventListener("click", () => { sections.splice(i, 1); renderSections(); });
+    list.appendChild(div);
+  });
+  $("#sections").style.display = "block";
+}
+$("#btnAdd").addEventListener("click", () => {
+  sections.push({ title: `小记${sections.length + 1}`, text: "" });
+  renderSections();
+});
+
+/* ---------- 生成 ---------- */
+$("#btnGenerate").addEventListener("click", async () => {
+  if (!imageBase64) return setStatus("#status", "err", "请先上传参考图片");
+  if (!sections.length) {
+    // 未点分节则自动分一次
+    const text = $("#text").value.trim();
+    if (!text) return setStatus("#status", "err", "请先粘贴文案并分节");
+    setStatus("#status", "busy", '<span class="spin"></span>正在分节…');
+    const r = await fetch("/api/segment", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, sectionSize: Number($("#sectionSize").value) || 2 }),
+    });
+    const j = await r.json();
+    if (!r.ok) return setStatus("#status", "err", "✗ " + (j.error || "分节失败"));
+    sections = j.sections;
+    renderSections();
+  }
+  const live = sections.filter((s) => s.text.trim() || s.title.trim());
+  if (!live.length) return setStatus("#status", "err", "分节内容为空");
+
+  const btn = $("#btnGenerate");
+  btn.disabled = true;
+  setStatus("#status", "busy", '<span class="spin"></span>' + (cutoutOn() ? "抠图 → 调色 → 排版 → 截图" : "调色 → 排版 → 截图（快速模式）") + '，约 3~8 秒…');
+  try {
+    const r = await fetch("/api/generate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image: imageBase64,
+        sections: live,
+        title: $("#title").value.trim(),
+        subtitle: $("#subtitle").value.trim(),
+        en: $("#en").value.trim(),
+        mode: mode(),
+        sticker: cutoutOn(),
+        scale: scale(),
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "生成失败");
+    $("#preview").src = j.url + "?t=" + Date.now();
+    $("#download").href = j.url;
+    $("#meta").textContent = `导出尺寸 ${j.width} × ${j.height} px · 抠图方式 ${j.method}`;
+    setStatus("#status", "ok", "✓ 生成完成，可预览并下载 PNG");
+    $("#result").style.display = "block";
+    $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    setStatus("#status", "err", "✗ " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
